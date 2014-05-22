@@ -1,0 +1,25 @@
+name:                Palace
+version:             0.1.0.0
+synopsis:            Integrated tools for personal information management.
+description:         
+homepage:            http://github.com/bbshortcut/Palace
+license:             GPL-3
+license-file:        LICENSE
+author:              B.B. Shortcut
+maintainer:          bbshortcut@alysse.org
+copyright:           Copyright (C) 2014 B.B. Shortcut
+category:            Personal Information Management
+build-type:          Simple
+cabal-version:       >=1.8
+
+executable cards
+  main-is:             cards.hs
+  other-modules:       Cards, TimeSpecs, Utils
+  build-depends:       base ==4.6.*, time ==1.4.*, containers ==0.5.*, readline ==1.0.*, directory ==1.2.*, filepath ==1.3.*, HDBC ==2.3.*, HDBC-sqlite3 ==2.3.*, process ==1.2.*
+  hs-source-dirs:      src
+
+executable drives
+  main-is:             drives.hs
+  other-modules:       Drives, TimeSpecs, Utils
+  build-depends:       base ==4.6.*, time ==1.4.*, containers ==0.5.*, readline ==1.0.*, directory ==1.2.*, filepath ==1.3.*, HDBC ==2.3.*, HDBC-sqlite3 ==2.3.*, network ==2.4.*, process ==1.2.*
+  hs-source-dirs:      src

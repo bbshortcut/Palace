@@ -37,11 +37,11 @@ main = do
 
                                     (=<<) (update card)
                                        (if isOk
-                                        then promote card
-                                        else demote card)
+                                          then promote card
+                                          else demote card)
     ("remove":ids) -> if null ids
-                      then delete =<< liftM fromJust maxId
-                      else mapM_ (delete . read) ids
+                        then delete =<< liftM fromJust maxId
+                        else mapM_ (delete . read) ids
     _              -> putStrLn ("Argument has to be either add, " ++
                                 "edit [ids...], export, info, list, " ++
                                 "pick [ids...] or remove [ids...].")

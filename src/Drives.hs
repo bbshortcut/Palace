@@ -50,30 +50,30 @@ walkDirectory path = do
   directoryExists <- doesDirectoryExist path
 
   if directoryExists
-  then do
-    stepInto <- getYesOrNo ("Step into " ++ path)
-
-    if stepInto
     then do
-      contents <- getDirectoryContents' path
-      filteredContents <- filterM (\ name -> getYesOrNo $ "Include " ++
-                                   path </> name) $ sort contents
+      stepInto <- getYesOrNo ("Step into " ++ path)
 
-      return (takeFileName' path, map (path </>) filteredContents)
+      if stepInto
+        then do
+          contents <- getDirectoryContents' path
+          filteredContents <- filterM (\ name -> getYesOrNo $ "Include " ++
+                                       path </> name) $ sort contents
+
+          return (takeFileName' path, map (path </>) filteredContents)
+        else return (takeFileName' path, [])
     else return (takeFileName' path, [])
-  else return (takeFileName' path, [])
 
 createFileForest :: FilePath -> IO FileForest
 createFileForest path = do
   directoryExists <- doesDirectoryExist path
 
   if directoryExists
-  then do
-    contents <- getDirectoryContents' path
-    filteredContents <- filterM (\ name -> getYesOrNo $ "Include " ++
-                                           path </> name) $ sort contents
-    unfoldForestM_BF walkDirectory $ map (path </>) filteredContents
-  else error ("Path " ++ path ++ " not found.")
+    then do
+      contents <- getDirectoryContents' path
+      filteredContents <- filterM (\ name -> getYesOrNo $ "Include " ++
+                                             path </> name) $ sort contents
+      unfoldForestM_BF walkDirectory $ map (path </>) filteredContents
+    else error ("Path " ++ path ++ " not found.")
 
 dbPath :: IO FilePath
 dbPath = do
@@ -131,18 +131,18 @@ testBinding opts = do
   host <- getHostName
 
   if isJust . optName $ opts
-  then do
-    let volume = fromJust . optName $ opts
+    then do
+      let volume = fromJust . optName $ opts
 
-    conn <- dbPath >>= connectSqlite3
-    bindings <- quickQuery' conn ("SELECT * FROM bindings WHERE volume = ? " ++
-                                  "AND host = ?") [toSql volume, toSql host]
-    disconnect conn
+      conn <- dbPath >>= connectSqlite3
+      bindings <- quickQuery' conn ("SELECT * FROM bindings WHERE volume = ? " ++
+                                    "AND host = ?") [toSql volume, toSql host]
+      disconnect conn
 
-    when (not (null bindings)) $
-         error ("Binding for volume " ++ volume ++ " on host " ++ host ++
-                " already exists.")
-  else error "Options are missing."
+      when (not (null bindings)) $
+           error ("Binding for volume " ++ volume ++ " on host " ++ host ++
+                  " already exists.")
+    else error "Options are missing."
 
 createBinding :: Options -> IO Binding
 createBinding opts = do
@@ -153,9 +153,9 @@ createBinding opts = do
   if (isJust . optName $ opts) &&
      (isJust . optVPoint $ opts) &&
      (isJust . optBPoint $ opts)
-  then return $ Binding (fromJust . optName $ opts) host
-           (fromJust . optVPoint $ opts) (fromJust . optBPoint $ opts)
-  else error "Options are missing."
+    then return $ Binding (fromJust . optName $ opts) host
+             (fromJust . optVPoint $ opts) (fromJust . optBPoint $ opts)
+    else error "Options are missing."
 
 addBinding :: Binding -> IO ()
 addBinding (Binding volume host vpoint bpoint) = do
@@ -188,17 +188,17 @@ getBinding volume host = do
 testVolume :: Options -> IO ()
 testVolume opts =
     if isJust . optName $ opts
-    then do
-      let volume = fromJust . optName $ opts
+      then do
+        let volume = fromJust . optName $ opts
 
-      conn    <- dbPath >>= connectSqlite3
-      volumes <- quickQuery' conn "SELECT * FROM volumes WHERE volume = ?"
-                 [toSql volume]
-      disconnect conn
+        conn    <- dbPath >>= connectSqlite3
+        volumes <- quickQuery' conn "SELECT * FROM volumes WHERE volume = ?"
+                   [toSql volume]
+        disconnect conn
 
-      when (not (null volumes)) $
-           error ("Volume " ++ volume ++ " already exists.")
-    else error "Options are missing."
+        when (not (null volumes)) $
+             error ("Volume " ++ volume ++ " already exists.")
+      else error "Options are missing."
 
 createVolume :: Options -> IO Volume
 createVolume opts = do
@@ -206,10 +206,10 @@ createVolume opts = do
 
   if (isJust . optName $ opts) &&
      (isJust . optVPoint $ opts)
-  then do
-    forest <- createFileForest $ fromJust . optVPoint $ opts
-    return $ Volume (fromJust . optName $ opts) forest
-  else error "Options are missing."
+    then do
+      forest <- createFileForest $ fromJust . optVPoint $ opts
+      return $ Volume (fromJust . optName $ opts) forest
+    else error "Options are missing."
 
 addVolume :: Volume -> IO ()
 addVolume (Volume volume forest) = do
@@ -249,12 +249,12 @@ onHost opts operation = do
   host <- getHostName
 
   if optAll opts
-  then do
-    names <- getVolumes host
-    operation host names
-  else if not (null . optNames $ opts)
-       then operation host (optNames opts)
-       else error "Options are missing."
+    then do
+      names <- getVolumes host
+      operation host names
+    else if not (null . optNames $ opts)
+           then operation host (optNames opts)
+           else error "Options are missing."
 
 withVolumes :: (Volume -> Binding -> IO ())
             -> HostName -> [VolumeName] -> IO ()
@@ -296,15 +296,15 @@ backupPath binding@(Binding volume _ vpoint bpoint)
   pathExists <- doesPathExist $ vpoint </> path
 
   if pathExists
-  then do
-    createDirectoryIfMissing True $ (</>) (bpoint </> volume </> newTimestamp) $ takeDirectory path
-    callCommand $ backupPathCmd binding oldTimestamp newTimestamp path
-    putStrLn "done."
-    hFlush stdout
-  else do
-    putStrLn "failed."
-    hFlush stdout
-    error $ "Path " ++ vpoint </> path ++ " not found."
+    then do
+      createDirectoryIfMissing True $ (</>) (bpoint </> volume </> newTimestamp) $ takeDirectory path
+      callCommand $ backupPathCmd binding oldTimestamp newTimestamp path
+      putStrLn "done."
+      hFlush stdout
+    else do
+      putStrLn "failed."
+      hFlush stdout
+      error $ "Path " ++ vpoint </> path ++ " not found."
 
 backupVolume :: Volume -> Binding -> IO ()
 backupVolume (Volume volume forest) binding@(Binding _ _ vpoint bpoint) = do
@@ -336,17 +336,17 @@ restorePath binding@(Binding volume _ vpoint bpoint)
                 (</>) bpoint . (</>) volume . (</>) timestamp $ path
 
   if pathExists
-  then do
-    createDirectoryIfMissing True $ (</>) vpoint $ takeDirectory path
-    callCommand $ restorePathCmd binding timestamp path
-    putStrLn "done."
-    hFlush stdout
-  else do
-    putStrLn "failed."
-    hFlush stdout
-    error ("Path " ++
-           bpoint </> volume </> timestamp </> path ++
-           " not found.")
+    then do
+      createDirectoryIfMissing True $ (</>) vpoint $ takeDirectory path
+      callCommand $ restorePathCmd binding timestamp path
+      putStrLn "done."
+      hFlush stdout
+    else do
+      putStrLn "failed."
+      hFlush stdout
+      error ("Path " ++
+             bpoint </> volume </> timestamp </> path ++
+             " not found.")
 
 restoreVolume :: Volume -> Binding -> IO ()
 restoreVolume (Volume volume forest) binding@(Binding _ _ vpoint bpoint) = do

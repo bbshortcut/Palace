@@ -66,11 +66,11 @@ ask card = do
   putSide "Answer:" (_cVerso card)
 
   if isKnown
-  then getYesOrNo "Was your answer correct"
-  else return False
-    where putSide :: String -> String -> IO ()
-          putSide intro side =
-              putStrLn (intro ++ "\n") >> putStrLn ("\t" ++ side ++ "\n")
+    then getYesOrNo "Was your answer correct"
+    else return False
+      where putSide :: String -> String -> IO ()
+            putSide intro side =
+                putStrLn (intro ++ "\n") >> putStrLn ("\t" ++ side ++ "\n")
 
 edit :: Card -> IO Card
 edit card = do
@@ -179,10 +179,10 @@ delete id = bracket (dbPath >>= connectSqlite3) disconnect $
                                          "card " ++ show id)
 
               if isConfirmed
-              then do
-                run conn "DELETE FROM cards WHERE ID=?" [toSql id]
-                putStrLn ("Card " ++ show id ++ " deleted.")
-              else putStrLn ("Card " ++ show id ++ " not deleted.")
+                then do
+                  run conn "DELETE FROM cards WHERE ID=?" [toSql id]
+                  putStrLn ("Card " ++ show id ++ " deleted.")
+                else putStrLn ("Card " ++ show id ++ " not deleted.")
 
 cards :: IO [Card]
 cards = bracket (dbPath >>= connectSqlite3) disconnect $

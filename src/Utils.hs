@@ -162,17 +162,17 @@ getTimestampsInDirectory path = do
   pathExists <- doesDirectoryExist path
 
   if pathExists
-  then do
-    contents <- getDirectoryContents path
+    then do
+      contents <- getDirectoryContents path
 
-    return $ filter isTimestamp contents
-  else return []
+      return $ filter isTimestamp contents
+    else return []
 
 getAnswerWithPrefill :: String -> String -> IO String
 getAnswerWithPrefill prefill question = do
   setPreInputHook (if null prefill
-                   then Nothing
-                   else Just (do insertText prefill; redisplay))
+                     then Nothing
+                     else Just (do insertText prefill; redisplay))
 
   mAnswer <- readline (question ++ "?  ")
 
