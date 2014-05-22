@@ -77,7 +77,7 @@ createFileForest path = do
 
 dbPath :: IO FilePath
 dbPath = do
-  appUserDataDir <- getAppUserDataDirectory "hvolumes"
+  appUserDataDir <- getAppUserDataDirectory "Palace"
   return $ appUserDataDir </> "volumes.db"
 
 createDB :: IO ()

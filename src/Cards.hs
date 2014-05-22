@@ -112,7 +112,7 @@ promote card = setFreq (freqNeighbor False $ _cFrequency card) card
 
 dbPath :: IO FilePath
 dbPath = do
-  appUserDataDir <- getAppUserDataDirectory "hcards"
+  appUserDataDir <- getAppUserDataDirectory "Palace"
   return $ combine appUserDataDir "cards.db"
 
 createDB :: IO ()
