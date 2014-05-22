@@ -27,7 +27,7 @@ import Database.HDBC (run, quickQuery', commit, disconnect, getTables,
 import Database.HDBC.Sqlite3 (connectSqlite3)
 import System.Directory (getAppUserDataDirectory, doesFileExist,
                          createDirectoryIfMissing)
-import System.FilePath (combine, takeDirectory)
+import System.FilePath ((</>), takeDirectory)
 import System.IO (hFlush, stdout)
 import TimeSpecs (Frequency(..), TimeUnit(..), nextDay)
 import Utils (getAnswer, getAnswerWithPrefill, getYesOrNo, itemPred,
@@ -113,7 +113,7 @@ promote card = setFreq (freqNeighbor False $ _cFrequency card) card
 dbPath :: IO FilePath
 dbPath = do
   appUserDataDir <- getAppUserDataDirectory "Palace"
-  return $ combine appUserDataDir "cards.db"
+  return $ appUserDataDir </> "cards.db"
 
 createDB :: IO ()
 createDB =
