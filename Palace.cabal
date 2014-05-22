@@ -18,8 +18,8 @@ executable cards
   build-depends:       base ==4.6.*, time ==1.4.*, containers ==0.5.*, readline ==1.0.*, directory ==1.2.*, filepath ==1.3.*, HDBC ==2.3.*, HDBC-sqlite3 ==2.3.*
   hs-source-dirs:      src
 
-executable drives
-  main-is:             drives.hs
-  other-modules:       Drives, TimeSpecs, Utils
+executable volumes
+  main-is:             volumes.hs
+  other-modules:       Volumes, TimeSpecs, Utils
   build-depends:       base ==4.6.*, time ==1.4.*, containers ==0.5.*, readline ==1.0.*, directory ==1.2.*, filepath ==1.3.*, HDBC ==2.3.*, HDBC-sqlite3 ==2.3.*, network ==2.4.*, process ==1.2.*
   hs-source-dirs:      src

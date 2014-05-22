@@ -1,5 +1,5 @@
 import Data.Maybe (isJust, fromJust)
-import Drives (setDBUp, VolumeName, Options(..), defaults,
+import Volumes (setDBUp, VolumeName, Options(..), defaults,
                createBinding, addBinding, createVolume, addVolume,
                onHost, withVolumes, backupVolume, printVolume, restoreVolume)
 import System.Console.GetOpt (ArgOrder(..), OptDescr(..), ArgDescr(..),

@@ -24,18 +24,18 @@ management.
 - cards remove [ids...]: remove the last/some flash cards from the
   deck
 
-### drives
+### volumes
 
-*drives* allows to backup/restore volumes, associated with machines,
+*volumes* allows to backup/restore volumes, associated with machines,
 on removeable drives.  Each volume is a file forest that may or may
 not be available at a given volume point on a given machine.  If it is
 then a backup point is also defined and hosts timestamped backups.
-*drives* builds backups with hard links so that only data changed
+*volumes* builds backups with hard links so that only data changed
 since previous backups is transferred (incremental backups).
 
-*drives* provides the following commands:
-- drives backup [volumes...]: backups volumes
-- drives restore [volumes...]: restores volumes
+*volumes* provides the following commands:
+- volumes backup [volumes...]: backups volumes
+- volumes restore [volumes...]: restores volumes
 
 ## Expected Tools
 

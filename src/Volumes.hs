@@ -1,4 +1,4 @@
-module Drives (setDBUp, VolumeName, Options(..), defaults,
+module Volumes (setDBUp, VolumeName, Options(..), defaults,
                createBinding, addBinding, createVolume, addVolume,
                onHost, withVolumes, backupVolume, printVolume, restoreVolume)
         where
@@ -77,8 +77,8 @@ createFileForest path = do
 
 dbPath :: IO FilePath
 dbPath = do
-  appUserDataDir <- getAppUserDataDirectory "hdrives"
-  return $ appUserDataDir </> "drives.db"
+  appUserDataDir <- getAppUserDataDirectory "hvolumes"
+  return $ appUserDataDir </> "volumes.db"
 
 createDB :: IO ()
 createDB = do
