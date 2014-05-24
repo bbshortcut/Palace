@@ -91,15 +91,14 @@ dbPath = do
   liftM (</> "volumes.db") $ getAppUserDataDirectory "Palace"
 
 createDB :: IO ()
-createDB = do
-  conn <- dbPath >>= connectSqlite3
-  run conn ("CREATE TABLE volumes " ++
-            "(volume VARCHAR NOT NULL, path VARCHAR NOT NULL)") []
-  run conn ("CREATE TABLE bindings " ++
-            "(volume VARCHAR NOT NULL, host VARCHAR NOT NULL, " ++
-            "vpoint VARCHAR NOT NULL, bpoint VARCHAR NOT NULL)") []
-  commit conn
-  disconnect conn
+createDB = bracket (dbPath >>= connectSqlite3) disconnect $
+           \conn -> do
+             run conn ("CREATE TABLE volumes " ++
+                       "(volume VARCHAR NOT NULL, path VARCHAR NOT NULL)") []
+             run conn ("CREATE TABLE bindings " ++
+                       "(volume VARCHAR NOT NULL, host VARCHAR NOT NULL, " ++
+                       "vpoint VARCHAR NOT NULL, bpoint VARCHAR NOT NULL)") []
+             commit conn
 
 setDBUp :: IO ()
 setDBUp = do
@@ -107,11 +106,11 @@ setDBUp = do
 
   createDirectoryIfMissing True $ takeDirectory path
 
-  conn <- connectSqlite3 path
-  tables <- getTables conn
-  disconnect conn
+  bracket (connectSqlite3 path) disconnect $
+              \conn -> do
+                tables <- getTables conn
 
-  when ("volumes" `notElem` tables) createDB
+                when ("volumes" `notElem` tables) createDB
 
 type VolumeName = String
 
@@ -144,14 +143,16 @@ testBinding opts = do
     then do
       let volume = fromJust . optName $ opts
 
-      conn <- dbPath >>= connectSqlite3
-      bindings <- quickQuery' conn ("SELECT * FROM bindings WHERE volume = ? " ++
-                                    "AND host = ?") [toSql volume, toSql host]
-      disconnect conn
+      bracket (dbPath >>= connectSqlite3) disconnect $
+                  \conn -> do
+                     bindings <- quickQuery' conn ("SELECT * FROM bindings " ++
+                                                   "WHERE volume = ? " ++
+                                                   "AND host = ?")
+                                 [toSql volume, toSql host]
 
-      when (not (null bindings)) $
-           error ("Binding for volume " ++ volume ++ " on host " ++ host ++
-                  " already exists.")
+                     when (not (null bindings)) $
+                          error ("Binding for volume " ++ volume ++
+                                 " on host " ++ host ++ " already exists.")
     else error "Options are missing."
 
 createBinding :: Options -> IO Binding
@@ -168,26 +169,28 @@ createBinding opts = do
     else error "Options are missing."
 
 addBinding :: Binding -> IO ()
-addBinding (Binding volume host vpoint bpoint) = do
-  conn <- dbPath >>= connectSqlite3
-
-  run conn ("INSERT INTO bindings (volume, host, vpoint, bpoint) " ++
-            "VALUES (?, ?, ?, ?)")
-      [toSql volume, toSql host, toSql vpoint, toSql bpoint]
-  commit conn
-  disconnect conn
+addBinding (Binding volume host vpoint bpoint) =
+    bracket (dbPath >>= connectSqlite3) disconnect $
+                \conn -> do
+                  run conn ("INSERT INTO bindings (volume, host, " ++
+                            "vpoint, bpoint) VALUES (?, ?, ?, ?)")
+                          [ toSql volume, toSql host, toSql vpoint
+                          , toSql bpoint]
+                  commit conn
 
 getBindings :: HostName -> IO [Binding]
-getBindings host = do
-  conn <- dbPath >>= connectSqlite3
-  bindings <- quickQuery' conn
-              "SELECT * FROM bindings WHERE host = ?" [toSql host]
-  disconnect conn
-  return $ map makeBinding bindings
-    where makeBinding :: [SqlValue] -> Binding
-          makeBinding [volume, host, vpoint, bpoint] =
-              Binding (fromSql volume) (fromSql host)
-                      (fromSql vpoint) (fromSql bpoint)
+getBindings host =
+    bracket (dbPath >>= connectSqlite3) disconnect $
+                \conn -> do
+                  bindings <- quickQuery' conn
+                              "SELECT * FROM bindings WHERE host = ?"
+                              [toSql host]
+
+                  return $ map makeBinding bindings
+      where makeBinding :: [SqlValue] -> Binding
+            makeBinding [volume, host, vpoint, bpoint] =
+                Binding (fromSql volume) (fromSql host)
+                            (fromSql vpoint) (fromSql bpoint)
 
 getBinding :: VolumeName -> HostName -> IO (Maybe Binding)
 getBinding volume host = do
@@ -201,13 +204,14 @@ testVolume opts =
       then do
         let volume = fromJust . optName $ opts
 
-        conn    <- dbPath >>= connectSqlite3
-        volumes <- quickQuery' conn "SELECT * FROM volumes WHERE volume = ?"
-                   [toSql volume]
-        disconnect conn
+        bracket (dbPath >>= connectSqlite3) disconnect $
+                    \conn -> do
+                      volumes <- quickQuery' conn
+                                 "SELECT * FROM volumes WHERE volume = ?"
+                                 [toSql volume]
 
-        when (not (null volumes)) $
-             error ("Volume " ++ volume ++ " already exists.")
+                      when (not (null volumes)) $
+                           error ("Volume " ++ volume ++ " already exists.")
       else error "Options are missing."
 
 createVolume :: Options -> IO Volume
@@ -222,31 +226,32 @@ createVolume opts = do
     else error "Options are missing."
 
 addVolume :: Volume -> IO ()
-addVolume (Volume volume forest) = do
-  conn <- dbPath >>= connectSqlite3
-  request <- prepare conn
-             "INSERT INTO volumes (volume, path) VALUES (?, ?)"
+addVolume (Volume volume forest) =
+    bracket (dbPath >>= connectSqlite3) disconnect $
+                \conn -> do
+                  request <- prepare conn
+                             "INSERT INTO volumes (volume, path) VALUES (?, ?)"
 
-  executeMany request $
-              map (\ path -> [toSql volume, toSql path]) $
-                  sort $ concatMap toFilePaths forest
-  commit conn
-  disconnect conn
+                  executeMany request $
+                              map (\ path -> [toSql volume, toSql path]) $
+                                  sort $ concatMap toFilePaths forest
+                  commit conn
 
 getVolume :: VolumeName -> IO (Maybe Volume)
-getVolume volume = do
-  conn <- dbPath >>= connectSqlite3
-  paths <- quickQuery' conn "SELECT path FROM volumes WHERE volume = ?"
-           [toSql volume]
-  disconnect conn
+getVolume volume =
+    bracket (dbPath >>= connectSqlite3) disconnect $
+                \conn -> do
+                  paths <- quickQuery' conn
+                           "SELECT path FROM volumes WHERE volume = ?"
+                           [toSql volume]
 
-  case paths of
-    []        -> return Nothing
-    otherwise ->
-        return . Just . Volume volume .
-               foldl addTreeToForest [] . mapMaybe toFileTree $
-                     sort . map (fromSql :: SqlValue -> String) $
-                          concat paths
+                  case paths of
+                    []        -> return Nothing
+                    otherwise ->
+                        return . Just . Volume volume .
+                               foldl addTreeToForest [] . mapMaybe toFileTree $
+                               sort . map (fromSql :: SqlValue -> String) $
+                               concat paths
 
 getVolumes :: HostName -> IO [VolumeName]
 getVolumes host = do
