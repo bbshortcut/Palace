@@ -92,7 +92,7 @@ dbPath = do
 
 createDB :: IO ()
 createDB = bracket (dbPath >>= connectSqlite3) disconnect $
-           \conn -> do
+           \ conn -> do
              run conn ("CREATE TABLE volumes " ++
                        "(volume VARCHAR NOT NULL, path VARCHAR NOT NULL)") []
              run conn ("CREATE TABLE bindings " ++
@@ -107,7 +107,7 @@ setDBUp = do
   createDirectoryIfMissing True $ takeDirectory path
 
   bracket (connectSqlite3 path) disconnect $
-              \conn -> do
+              \ conn -> do
                 tables <- getTables conn
 
                 when ("volumes" `notElem` tables) createDB
@@ -144,7 +144,7 @@ testBinding opts = do
       let volume = fromJust . optName $ opts
 
       bracket (dbPath >>= connectSqlite3) disconnect $
-                  \conn -> do
+                  \ conn -> do
                      bindings <- quickQuery' conn ("SELECT * FROM bindings " ++
                                                    "WHERE volume = ? " ++
                                                    "AND host = ?")
@@ -171,7 +171,7 @@ createBinding opts = do
 addBinding :: Binding -> IO ()
 addBinding (Binding volume host vpoint bpoint) =
     bracket (dbPath >>= connectSqlite3) disconnect $
-                \conn -> do
+                \ conn -> do
                   run conn ("INSERT INTO bindings (volume, host, " ++
                             "vpoint, bpoint) VALUES (?, ?, ?, ?)")
                           [ toSql volume, toSql host, toSql vpoint
@@ -181,7 +181,7 @@ addBinding (Binding volume host vpoint bpoint) =
 getBindings :: HostName -> IO [Binding]
 getBindings host =
     bracket (dbPath >>= connectSqlite3) disconnect $
-                \conn -> do
+                \ conn -> do
                   bindings <- quickQuery' conn
                               "SELECT * FROM bindings WHERE host = ?"
                               [toSql host]
@@ -205,7 +205,7 @@ testVolume opts =
         let volume = fromJust . optName $ opts
 
         bracket (dbPath >>= connectSqlite3) disconnect $
-                    \conn -> do
+                    \ conn -> do
                       volumes <- quickQuery' conn
                                  "SELECT * FROM volumes WHERE volume = ?"
                                  [toSql volume]
@@ -228,7 +228,7 @@ createVolume opts = do
 addVolume :: Volume -> IO ()
 addVolume (Volume volume forest) =
     bracket (dbPath >>= connectSqlite3) disconnect $
-                \conn -> do
+                \ conn -> do
                   request <- prepare conn
                              "INSERT INTO volumes (volume, path) VALUES (?, ?)"
 
@@ -240,7 +240,7 @@ addVolume (Volume volume forest) =
 getVolume :: VolumeName -> IO (Maybe Volume)
 getVolume volume =
     bracket (dbPath >>= connectSqlite3) disconnect $
-                \conn -> do
+                \ conn -> do
                   paths <- quickQuery' conn
                            "SELECT path FROM volumes WHERE volume = ?"
                            [toSql volume]
