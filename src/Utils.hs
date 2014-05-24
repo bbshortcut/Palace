@@ -77,7 +77,7 @@ intersectSeed (treeA, treeB) =
     if (depth treeA == 1) || (depth treeB == 1)
       then (rootLabel treeA, [])
       else (rootLabel treeA,
-            filter (\ (x, y) -> sameRoot x y) $
+            filter (uncurry sameRoot) $
                    subForest treeA `cartProd` subForest treeB)
         where depth :: Tree a -> Int
               depth = length . levels
