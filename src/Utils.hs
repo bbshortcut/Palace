@@ -8,6 +8,7 @@ module Utils ( FileName
              , getTimestamp
              , getTimestampsInDirectory
              , getYesOrNo
+             , intersectTrees
              , itemPred
              , itemSucc
              , latestTimestamp
@@ -22,7 +23,7 @@ import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (isJust)
 import Data.Time.Calendar (Day, toGregorian, fromGregorian, diffDays)
 import Data.Time.Clock (getCurrentTime, utctDay, utctDayTime, DiffTime)
-import Data.Tree (Tree(..), Forest)
+import Data.Tree (Tree(..), Forest, levels, unfoldTree)
 import System.Console.Readline (readline,
                                 setPreInputHook, insertText, redisplay)
 import System.Directory (doesDirectoryExist, doesFileExist,
@@ -39,25 +40,47 @@ itemPred :: Eq a => [a] -> a -> Maybe a
 itemSucc :: Eq a => [a] -> a -> Maybe a
 itemSucc xs = itemPred (reverse xs)
 
-addTrees :: (Eq a) => Tree a -> Tree a -> Maybe (Tree a)
+cartProd :: [a] -> [b] -> [(a, b)]
+cartProd xs ys = [(x, y) | x <- xs, y <- ys]
+
+sameRoot :: Eq a => Tree a -> Tree a -> Bool
+sameRoot x y = rootLabel x == rootLabel y
+
+addTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
 addTrees treeA treeB
-    | rootLabel treeA == rootLabel treeB =
+    | sameRoot treeA treeB =
         Just $ Node (rootLabel treeA) $
              addForests (subForest treeA) (subForest treeB)
     | otherwise = Nothing
 
-addForests :: (Eq a) => Forest a -> Forest a -> Forest a
+addForests :: Eq a => Forest a -> Forest a -> Forest a
 addForests = foldl addTreeToForest
 
-addTreeToForest :: (Eq a) => Forest a -> Tree a -> Forest a
+addTreeToForest :: Eq a => Forest a -> Tree a -> Forest a
 addTreeToForest [] tree = [tree]
 addTreeToForest (tree : trees) oneMoreTree =
     case addTrees tree oneMoreTree of
       Nothing -> tree : addTreeToForest trees oneMoreTree
       Just t -> t : trees
 
-removeTrees :: (Eq a) => Tree a -> Tree a -> Maybe (Tree a)
+removeTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
 removeTrees = error "Not implemented."
+
+intersectTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
+intersectTrees treeA treeB =
+    if sameRoot treeA treeB
+      then Just $ unfoldTree intersectSeed (treeA, treeB)
+      else Nothing
+
+intersectSeed :: Eq a => (Tree a, Tree a) -> (a, [(Tree a, Tree a)])
+intersectSeed (treeA, treeB) =
+    if (depth treeA == 1) || (depth treeB == 1)
+      then (rootLabel treeA, [])
+      else (rootLabel treeA,
+            filter (\ (x, y) -> sameRoot x y) $
+                   subForest treeA `cartProd` subForest treeB)
+        where depth :: Tree a -> Int
+              depth = length . levels
 
 takePrefix :: Eq a => [a] -> [a] -> [a]
 takePrefix (x:xs) (y:ys)
