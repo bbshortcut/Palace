@@ -1,8 +1,19 @@
-module Volumes (setDBUp, VolumeName, Options(..), defaults,
-               createBinding, addBinding, createVolume, addVolume,
-               onHost, withVolumes, backupVolume, printVolume, restoreVolume)
+module Volumes ( Options(..)
+               , VolumeName
+               , addBinding
+               , addVolume
+               , backupVolume
+               , createBinding
+               , createVolume
+               , defaults
+               , onHost
+               , printVolume
+               , restoreVolume
+               , setDBUp
+               , withVolumes)
         where
 
+import Control.Exception (bracket)
 import Control.Monad (forM_, liftM, when, filterM)
 import Data.List (sort, find)
 import Data.Maybe (isJust, mapMaybe, fromJust, catMaybes)
@@ -77,8 +88,7 @@ createFileForest path = do
 
 dbPath :: IO FilePath
 dbPath = do
-  appUserDataDir <- getAppUserDataDirectory "Palace"
-  return $ appUserDataDir </> "volumes.db"
+  liftM (</> "volumes.db") $ getAppUserDataDirectory "Palace"
 
 createDB :: IO ()
 createDB = do
