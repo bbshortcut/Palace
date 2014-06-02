@@ -7,8 +7,8 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.QuickCheck ((==>), Property)
 import Utils (itemPred)
 
-prop_itemPred_safety :: Eq a => [a] -> a -> Property
-prop_itemPred_safety ns x =
+prop_itemPred_bounded :: Eq a => [a] -> a -> Property
+prop_itemPred_bounded ns x =
     nub ns == ns ==>
     not (null ns) ==>
     head ns == x ==>
@@ -16,6 +16,6 @@ prop_itemPred_safety ns x =
 
 main :: IO ()
 main = defaultMainWithOpts
-       [ testProperty "itemPred safety"
-                      (prop_itemPred_safety :: [Int] -> Int -> Property)
+       [ testProperty "itemPred bounded"
+                      (prop_itemPred_bounded :: [Int] -> Int -> Property)
        ] mempty
