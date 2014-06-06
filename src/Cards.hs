@@ -181,6 +181,7 @@ delete id = bracket (dbPath >>= connectSqlite3) disconnect $
               if isConfirmed
                 then do
                   run conn "DELETE FROM cards WHERE ID=?" [toSql id]
+                  commit conn
                   putStrLn ("Card " ++ show id ++ " deleted.")
                 else putStrLn ("Card " ++ show id ++ " not deleted.")
 
