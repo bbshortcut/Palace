@@ -1,9 +1,10 @@
 module Main where
 
 import Data.Maybe (isJust, fromJust)
-import Volumes (setDBUp, VolumeName, Options(..), defaults,
-               createBinding, addBinding, createVolume, addVolume,
-               onHost, withVolumes, backupVolume, printVolume, restoreVolume)
+import VolumeDB (setDBUp, createBinding, addBinding, createVolume, addVolume,
+               onHost, withVolumes)
+import Volumes (VolumeName, Options(..), defaults, backupVolume, printVolume,
+                restoreVolume)
 import System.Console.GetOpt (ArgOrder(..), OptDescr(..), ArgDescr(..),
                               getOpt, usageInfo)
 import System.Environment (getArgs, getProgName)
