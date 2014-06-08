@@ -10,8 +10,8 @@ module Volumes ( Options(..)
                , printVolume
                , restoreVolume
                , setDBUp
-               , withVolumes)
-        where
+               , withVolumes
+               ) where
 
 import Control.Exception (bracket)
 import Control.Monad (forM_, liftM, when, filterM)
@@ -29,9 +29,19 @@ import System.Directory (getAppUserDataDirectory, createDirectoryIfMissing,
 import System.FilePath ((</>), joinPath, splitDirectories, takeDirectory)
 import System.IO (hFlush, stdout)
 import System.Process (callCommand)
-import Utils (FileName, Timestamp, addTreeToForest, doesPathExist,
-              getDirectoryContents', getTimestamp, getTimestampsInDirectory,
-              getYesOrNo, latestTimestamp, takeFileName', timestampsOlderThan)
+import Utils ( FileName
+             , Timestamp
+             , addTreeToForest
+             , doesPathExist
+             , getDirectoryContents'
+             , getTimestamp
+             , getTimestampsInDirectory
+             , getYesOrNo
+             , intersectTrees
+             , latestTimestamp
+             , takeFileName'
+             , timestampsOlderThan
+             )
 
 type FileTree = Tree FileName
 type FileForest = Forest FileName
@@ -332,7 +342,7 @@ backupVolume (Volume volume forest) binding@(Binding _ _ vpoint bpoint) = do
         timestampsOlderThan 31 (maximum timestamps) timestamps
 
 printVolume :: Volume -> Binding -> IO ()
-printVolume volume binding = error "Not implemented."
+printVolume = undefined
 
 restorePathCmd :: Binding -> Timestamp -> FilePath -> String
 restorePathCmd (Binding volume _ vpoint bpoint) timestamp path =

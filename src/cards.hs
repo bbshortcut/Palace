@@ -1,3 +1,5 @@
+module Main where
+
 import Cards (ask, cards, create, delete, demote, edit, export, first, get,
               insert, isDue, maxId, nextId, promote, put, putDBInfo, setDBUp,
               update)

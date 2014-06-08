@@ -64,7 +64,7 @@ addTreeToForest (tree : trees) oneMoreTree =
       Just t -> t : trees
 
 removeTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
-removeTrees = error "Not implemented."
+removeTrees = undefined
 
 intersectTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
 intersectTrees treeA treeB =

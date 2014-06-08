@@ -1,3 +1,5 @@
+module Main where
+
 import Data.Maybe (isJust, fromJust)
 import Volumes (setDBUp, VolumeName, Options(..), defaults,
                createBinding, addBinding, createVolume, addVolume,
