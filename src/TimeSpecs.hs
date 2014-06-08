@@ -51,9 +51,9 @@ data DayName = Monday
 data Frequency = Daily
                | Weekly
                | Monthly
+               | On Ordinal DayName
                | Yearly
                | Every Integer TimeUnit
-               | On Ordinal DayName
                  deriving (Eq, Read, Show)
 
 data FrequencyMode = Strict
