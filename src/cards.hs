@@ -1,8 +1,8 @@
 module Main where
 
-import Cards (ask, cards, create, delete, demote, edit, export, first, get,
-              insert, isDue, maxId, nextId, promote, put, putDBInfo, setDBUp,
-              update)
+import CardDB (cards, delete, first, get, insert, maxId, nextId, putDBInfo,
+               setDBUp, update)
+import Cards (ask, create, demote, edit, export, isDue, promote, put)
 import Control.Monad (forM_, liftM, when)
 import Data.Maybe (catMaybes, fromJust)
 import System.Environment (getArgs)
