@@ -3,9 +3,42 @@ module Main where
 import CardDB (cards, delete, first, get, insert, maxId, nextId, putDBInfo,
                setDBUp, update)
 import Cards (ask, create, demote, edit, export, isDue, promote, put)
-import Control.Monad (forM_, liftM, when)
+import Control.Monad (filterM, forM_, liftM, when)
 import Data.Maybe (catMaybes, fromJust)
-import System.Environment (getArgs)
+import System.Console.GetOpt (ArgOrder(..), OptDescr(..), ArgDescr(..),
+                              getOpt, usageInfo)
+import System.Environment (getArgs, getProgName)
+
+data Options =
+    Options { optAll    :: Bool
+            } deriving Show
+
+defaults :: Options
+defaults =
+    Options { optAll = False
+            }
+
+allOptions :: [OptDescr (Options -> Options)]
+allOptions =
+    [ Option "a" ["all"]
+                 (NoArg (\ opts ->
+                             opts { optAll = True }))
+                 "all due cards"
+    ]
+
+parseOpt :: [OptDescr (Options -> Options)]
+         -> [String] -> IO (Options, [String])
+parseOpt options args = do
+  progName <- getProgName
+
+  case getOpt Permute options args of
+    (o, n, [])   -> return (foldl (flip id) defaults o, n)
+    (_, _, errs) ->
+        ioError (userError (concat errs ++
+                                   usageInfo (header progName) options))
+    where header :: String -> String
+          header name = "Usage: " ++ name ++ " " ++
+                                   head args ++ " [OPTIONS...]"
 
 main = do
   args <- getArgs
@@ -23,24 +56,35 @@ main = do
     ["export"]     -> mapM_ export =<< cards
     ["info"]       -> putDBInfo
     ["list"]       -> mapM_ put =<< cards
-    ("pick":ids)   -> do
-              mFirst <- first =<< cards
-              let ids' = map read ids
-              mCards <- mapM get ids'
+    ("pick":_)     -> do
+              (opts, ids) <- parseOpt allOptions $ tail args
 
-              let mCards' = if null mCards then [mFirst] else mCards
+              if optAll opts
+                then do
+                  dueCards <- filterM isDue =<< cards
 
-              forM_ (catMaybes mCards') $
-                        \ card -> do
-                          isDue <- isDue card
+                  forM_ dueCards $
+                            \ card -> do
+                              isOk <- ask card
 
-                          when isDue $ do
-                                    isOk <- ask card
+                              (=<<) (update card)
+                                      (if isOk
+                                         then promote card
+                                         else demote card)
+                else do
+                  mFirst <- first =<< cards
+                  let ids' = map read ids
+                  mCards <- mapM get ids'
+                  let mCards' = if null mCards then [mFirst] else mCards
 
-                                    (=<<) (update card)
-                                       (if isOk
-                                          then promote card
-                                          else demote card)
+                  forM_ (catMaybes mCards') $
+                            \ card -> do
+                              isOk <- ask card
+
+                              (=<<) (update card)
+                                      (if isOk
+                                         then promote card
+                                         else demote card)
     ("remove":ids) -> if null ids
                         then delete =<< liftM fromJust maxId
                         else mapM_ (delete . read) ids
