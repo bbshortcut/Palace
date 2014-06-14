@@ -90,4 +90,4 @@ main = do
                         else mapM_ (delete . read) ids
     _              -> putStrLn ("Argument has to be either add, " ++
                                 "edit [ids...], export, info, list, " ++
-                                "pick [ids...] or remove [ids...].")
+                                "pick [ids...|--all] or remove [ids...].")
