@@ -1,7 +1,7 @@
 module Main where
 
 import CardDB (cards, delete, first, get, insert, maxId, nextId, putDBInfo,
-               setDBUp, update)
+               randomCards, setDBUp, update)
 import Cards (ask, create, demote, edit, export, isDue, promote, put)
 import Control.Monad (filterM, forM_, liftM, when)
 import Data.Maybe (catMaybes, fromJust)
@@ -61,7 +61,7 @@ main = do
 
               if optAll opts
                 then do
-                  dueCards <- filterM isDue =<< cards
+                  dueCards <- filterM isDue =<< randomCards
 
                   forM_ dueCards $
                             \ card -> do
@@ -72,7 +72,7 @@ main = do
                                          then promote card
                                          else demote card)
                 else do
-                  mFirst <- first =<< cards
+                  mFirst <- first =<< randomCards
                   let ids' = map read ids
                   mCards <- mapM get ids'
                   let mCards' = if null mCards then [mFirst] else mCards

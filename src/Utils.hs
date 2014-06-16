@@ -15,12 +15,14 @@ module Utils ( FileName
              , takeFileName'
              , timestampsOlderThan
              , today
+             , unsort
              ) where
 
 import Control.Monad (liftM)
 import Data.Char (isDigit)
-import Data.List (isPrefixOf, stripPrefix)
-import Data.Maybe (isJust)
+import Data.List (isPrefixOf, sortBy, stripPrefix)
+import Data.Maybe (isJust, maybe)
+import Data.Ord (comparing)
 import Data.Time.Calendar (Day, toGregorian, fromGregorian, diffDays)
 import Data.Time.Clock (getCurrentTime, utctDay, utctDayTime, DiffTime)
 import Data.Tree (Tree(..), Forest, levels, unfoldTree)
@@ -29,6 +31,7 @@ import System.Console.Readline (readline,
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
 import System.FilePath (joinPath, splitDirectories, takeFileName)
+import System.Random (Random, RandomGen, randoms)
 
 itemPred :: Eq a => [a] -> a -> Maybe a
 [] `itemPred` _ = Nothing
@@ -59,12 +62,21 @@ addForests = foldl addTreeToForest
 addTreeToForest :: Eq a => Forest a -> Tree a -> Forest a
 addTreeToForest [] tree = [tree]
 addTreeToForest (tree : trees) oneMoreTree =
-    case addTrees tree oneMoreTree of
-      Nothing -> tree : addTreeToForest trees oneMoreTree
-      Just t -> t : trees
+    maybe (tree : addTreeToForest trees oneMoreTree) ((flip (:)) trees)
+              (addTrees tree oneMoreTree)
 
 removeTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
-removeTrees = undefined
+removeTrees treeA treeB
+    | sameRoot treeA treeB =
+        let remainingSubForest =
+                removeForests (subForest treeA) (subForest treeB)
+        in if null remainingSubForest
+             then Nothing
+             else Just $ treeA { subForest = remainingSubForest }
+    | otherwise = Just treeA
+
+removeForests :: Eq a => Forest a -> Forest a -> Forest a
+removeForests = undefined
 
 intersectTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
 intersectTrees treeA treeB =
@@ -209,3 +221,7 @@ getAnswer = getAnswerWithPrefill ""
 getYesOrNo :: String -> IO Bool
 getYesOrNo question =
     liftM (isPrefixOf "y") $ getAnswer (question ++ " (y/N)")
+
+unsort :: RandomGen a => a -> [b] -> [b]
+unsort g es = map snd . sortBy (comparing fst) $ zip rs es
+  where rs = randoms g :: [Integer]

@@ -1,11 +1,12 @@
 module CardDB ( cards
+              , delete
               , first
               , get
               , insert
               , maxId
               , nextId
               , putDBInfo
-              , delete
+              , randomCards
               , setDBUp
               , update
               ) where
@@ -24,7 +25,8 @@ import Database.HDBC.Sqlite3 (connectSqlite3)
 import System.Directory (getAppUserDataDirectory, doesFileExist,
                          createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
-import Utils (getYesOrNo)
+import System.Random (newStdGen)
+import Utils (getYesOrNo, unsort)
 
 dbPath :: IO FilePath
 dbPath = do
@@ -106,6 +108,12 @@ cards = bracket (dbPath >>= connectSqlite3) disconnect $
         \ conn -> do
             cards <- quickQuery' conn "SELECT * FROM cards" []
             return $ map cardFromSql cards
+
+randomCards :: IO [Card]
+randomCards = do
+  cards <- cards
+  gen   <- newStdGen
+  return $ unsort gen cards
 
 first :: [Card] -> IO (Maybe Card)
 first cards = do
