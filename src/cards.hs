@@ -46,7 +46,7 @@ main = do
 
   case args of
     ["add"]        -> insert =<< create =<< nextId
-    ("edit":ids)   -> do
+    "edit" : ids   -> do
               max <- liftM fromJust maxId
               let ids' = if null ids then [max] else map read ids
               mCards <- mapM get ids'
@@ -56,7 +56,7 @@ main = do
     ["export"]     -> mapM_ export =<< cards
     ["info"]       -> putDBInfo
     ["list"]       -> mapM_ put =<< cards
-    ("pick":_)     -> do
+    "pick": _      -> do
               (opts, ids) <- parseOpt allOptions $ tail args
 
               if optAll opts
@@ -85,7 +85,7 @@ main = do
                                       (if isOk
                                          then promote card
                                          else demote card)
-    ("remove":ids) -> if null ids
+    "remove" : ids -> if null ids
                         then delete =<< liftM fromJust maxId
                         else mapM_ (delete . read) ids
     _              -> putStrLn ("Argument has to be either add, " ++
