@@ -34,8 +34,16 @@ then a backup point is also defined and hosts timestamped backups.
 since previous backups is transferred (incremental backups).
 
 *volumes* provides the following commands:
-- volumes backup [volumes...]: backups volumes
-- volumes restore [volumes...]: restores volumes
+- volumes backup [-a|--all] [NAMES...]: backup all volumes or volumes
+  NAMES
+- volumes check [-a|--all] [NAMES...]: check all volumes or volumes
+  NAMES
+- volumes create --vpoint <VPOINT> --bpoint <BPOINT> <NAME>: create
+  volume NAME with volume point VPOINT and backup point BPOINT
+- volumes info [-a|--all] [NAMES...]: print information about all
+  volumes or volumes NAMES
+- volumes restore [-a|--all] [NAMES...]: restore all volumes or
+  volumes NAMES
 
 ## Expected Tools
 

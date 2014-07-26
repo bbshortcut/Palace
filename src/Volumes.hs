@@ -1,20 +1,21 @@
 module Volumes ( Binding(..)
-               , Options(..)
                , Volume(..)
                , VolumeName
                , backupVolume
+               , checkVolume
+               , createBinding
                , createFileForest
-               , defaults
+               , createVolume
                , printVolume
                , restoreVolume
                , toFilePaths
                , toFileTree
                ) where
 
-import Control.Monad (forM_, filterM)
+import Control.Monad (forM_, filterM, liftM)
 import Data.List (sort)
 import Data.Tree (Tree(..), Forest, unfoldForestM_BF)
-import Network.BSD (HostName)
+import Network.BSD (HostName, getHostName)
 import System.Directory (createDirectoryIfMissing,
                          doesDirectoryExist, removeDirectoryRecursive)
 import System.FilePath ((</>), joinPath, splitDirectories, takeDirectory)
@@ -27,7 +28,6 @@ import Utils ( FileName
              , getTimestamp
              , getTimestampsInDirectory
              , getYesOrNo
-             , intersectTrees
              , latestTimestamp
              , takeFileName'
              , timestampsOlderThan
@@ -92,22 +92,15 @@ data Volume = Volume VolumeName FileForest
 
 data Binding = Binding VolumeName HostName FilePath FilePath
 
-data Options =
-    Options { optName   :: Maybe VolumeName
-            , optVPoint :: Maybe FilePath
-            , optBPoint :: Maybe FilePath
-            , optAll    :: Bool
-            , optNames  :: [VolumeName]
-            } deriving Show
+createBinding :: VolumeName -> FilePath -> FilePath -> IO Binding
+createBinding name vpoint bpoint = do
+  host <- getHostName
 
-defaults :: Options
-defaults =
-    Options { optName   = Nothing
-            , optVPoint = Nothing
-            , optBPoint = Nothing
-            , optAll    = False
-            , optNames  = []
-            }
+  return $ Binding name host vpoint bpoint
+
+createVolume :: VolumeName -> FilePath -> IO Volume
+createVolume name vpoint = do
+  liftM (Volume name) $ createFileForest vpoint
 
 backupPathCmd :: Binding -> Maybe Timestamp -> Timestamp -> FilePath -> String
 backupPathCmd (Binding volume _ vpoint bpoint) Nothing newTimestamp path =
@@ -152,8 +145,16 @@ backupVolume (Volume volume forest) binding@(Binding _ _ vpoint bpoint) = do
   mapM_ (removeDirectoryRecursive . (</>) bpoint . (</>) volume) $
         timestampsOlderThan 31 (maximum timestamps) timestamps
 
+checkVolume :: Volume -> Binding -> IO ()
+checkVolume = undefined
+
 printVolume :: Volume -> Binding -> IO ()
-printVolume = undefined
+printVolume (Volume name forest) (Binding _ _ vpoint bpoint) = do
+  putStrLn ("Volume: " ++ name)
+  putStrLn ("VPoint: " ++ vpoint)
+  putStrLn ("BPoint: " ++ bpoint)
+  putStrLn "Paths:"
+  mapM_ putStrLn $ concatMap toFilePaths forest
 
 restorePathCmd :: Binding -> Timestamp -> FilePath -> String
 restorePathCmd (Binding volume _ vpoint bpoint) timestamp path =

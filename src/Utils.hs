@@ -1,5 +1,6 @@
 module Utils ( FileName
              , Timestamp
+             , addTrees
              , addTreeToForest
              , doesPathExist
              , getAnswer
@@ -12,6 +13,7 @@ module Utils ( FileName
              , itemPred
              , itemSucc
              , latestTimestamp
+             , removeTrees
              , takeFileName'
              , timestampsOlderThan
              , today
@@ -20,8 +22,8 @@ module Utils ( FileName
 
 import Control.Monad (liftM)
 import Data.Char (isDigit)
-import Data.List (isPrefixOf, sortBy, stripPrefix)
-import Data.Maybe (isJust, maybe)
+import Data.List (find, isPrefixOf, sortBy, stripPrefix)
+import Data.Maybe (catMaybes, isJust, maybe)
 import Data.Ord (comparing)
 import Data.Time.Calendar (Day, toGregorian, fromGregorian, diffDays)
 import Data.Time.Clock (getCurrentTime, utctDay, utctDayTime, DiffTime)
@@ -76,7 +78,12 @@ removeTrees treeA treeB
     | otherwise = Just treeA
 
 removeForests :: Eq a => Forest a -> Forest a -> Forest a
-removeForests = undefined
+removeForests forestA forestB =
+    catMaybes $ map (mayFindAndRemove forestB) forestA
+        where mayFindAndRemove :: Eq a => Forest a -> Tree a -> Maybe (Tree a)
+              mayFindAndRemove forest tree =
+                  maybe (Just tree) (removeTrees tree) $
+                        find (sameRoot tree) forest
 
 intersectTrees :: Eq a => Tree a -> Tree a -> Maybe (Tree a)
 intersectTrees treeA treeB =

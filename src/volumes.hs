@@ -1,25 +1,29 @@
 module Main where
 
-import Data.Maybe (isJust, fromJust)
-import VolumeDB (setDBUp, createBinding, addBinding, createVolume, addVolume,
-               onHost, withVolumes)
-import Volumes (VolumeName, Options(..), defaults, backupVolume, printVolume,
-                restoreVolume)
+import Data.Maybe (fromMaybe)
+import VolumeDB (setDBUp, addBinding, addVolume, onHost, testBinding,
+                 testVolume, withVolumes)
+import Volumes (VolumeName, backupVolume, checkVolume, createBinding,
+                createVolume, printVolume, restoreVolume)
 import System.Console.GetOpt (ArgOrder(..), OptDescr(..), ArgDescr(..),
                               getOpt, usageInfo)
 import System.Environment (getArgs, getProgName)
 
-volumeOptions :: [OptDescr (Options -> Options)]
-volumeOptions =
-    [ Option "n" ["name"]
-                 (ReqArg (\ name opts ->
-                              opts { optName = Just name }) "NAME")
-                 "volume name NAME"
-    ]
+data Options =
+    Options { optVPoint :: Maybe FilePath
+            , optBPoint :: Maybe FilePath
+            , optAll    :: Bool
+            }
+
+defaults :: Options
+defaults =
+    Options { optVPoint = Nothing
+            , optBPoint = Nothing
+            , optAll    = False
+            }
 
 bindingOptions :: [OptDescr (Options -> Options)]
 bindingOptions =
-    volumeOptions ++
     [ Option "v" ["vpoint"]
                  (ReqArg (\ vpoint opts ->
                               opts { optVPoint = Just vpoint }) "VPOINT")
@@ -32,11 +36,7 @@ bindingOptions =
 
 allOptions :: [OptDescr (Options -> Options)]
 allOptions =
-    [ Option "n" ["name"]
-                 (ReqArg (\ name opts ->
-                              opts { optNames = name : optNames opts }) "NAME")
-                 "volume name NAME"
-    , Option "a" ["all"]
+    [ Option "a" ["all"]
                  (NoArg (\ opts ->
                              opts { optAll = True }))
                  "all volume names"
@@ -62,26 +62,44 @@ main = do
   setDBUp
 
   case args of
-    "create" : _  -> do
-              (opts, _) <- parseOpt bindingOptions $ tail args
-              volume    <- createVolume opts
-              binding   <- createBinding opts
-
-              addVolume volume
-              addBinding binding
     "backup" : _  -> do
-              (opts, _) <- parseOpt allOptions $ tail args
+              (opts, names) <- parseOpt allOptions $ tail args
 
-              onHost opts $ withVolumes backupVolume
+              onHost (optAll opts) names $ withVolumes backupVolume
+    "check" : _   -> do
+              (opts, names) <- parseOpt allOptions $ tail args
+
+              onHost (optAll opts) names $ withVolumes checkVolume
+    "create" : _  -> do
+              (opts, names) <- parseOpt bindingOptions $ tail args
+
+              let name = if length names == 1
+                           then head names
+                           else createUsage progName
+                  vpoint = fromMaybe (createUsage progName) $ optVPoint opts
+                  bpoint = fromMaybe (createUsage progName) $ optBPoint opts
+
+              testBinding name
+              testVolume name
+
+              addBinding =<< createBinding name vpoint bpoint
+              addVolume =<< createVolume name vpoint
     "info" : _    -> do
-              (opts, _) <- parseOpt allOptions $ tail args
+              (opts, names) <- parseOpt allOptions $ tail args
 
-              onHost opts $ withVolumes printVolume
+              onHost (optAll opts) names $ withVolumes printVolume
     "restore" : _ -> do
-              (opts, _) <- parseOpt allOptions $ tail args
+              (opts, names) <- parseOpt allOptions $ tail args
 
-              onHost opts $ withVolumes restoreVolume
-    _             ->
-        ioError (userError ("No command passed\n" ++
-                 "Usage: " ++ progName ++
-                 " [create|backup|restore] [OPTIONS...]\n"))
+              onHost (optAll opts) names $ withVolumes restoreVolume
+    _             -> usage progName
+    where createUsage name =
+              error ("Bad create command\n." ++
+                     "Usage: " ++ name ++
+                     " create --vpoint <VPOINT> " ++
+                     "--bpoint <BPOINT> <NAME>\n")
+          usage name =
+              ioError (userError ("No command passed\n" ++
+                                  "Usage: " ++ name ++
+                                  " [backup|check|create|info|restore] " ++
+                                  "[OPTIONS...] [NAMES...]\n"))

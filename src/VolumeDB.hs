@@ -1,9 +1,9 @@
 module VolumeDB ( addBinding
                 , addVolume
-               , createBinding
-                , createVolume
                 , onHost
                 , setDBUp
+                , testBinding
+                , testVolume
                 , withVolumes
                 ) where
 
@@ -19,12 +19,12 @@ import System.Directory (createDirectoryIfMissing, getAppUserDataDirectory)
 import System.FilePath ((</>), takeDirectory)
 import Utils (addTreeToForest)
 import Volumes ( Binding(..)
-               , Options(..)
                , Volume(..)
                , VolumeName
                , createFileForest
                , toFileTree
-               , toFilePaths)
+               , toFilePaths
+               )
 
 dbPath :: IO FilePath
 dbPath = do
@@ -52,38 +52,20 @@ setDBUp = do
 
                 when ("volumes" `notElem` tables) createDB
 
-testBinding :: Options -> IO ()
-testBinding opts = do
+testBinding :: VolumeName -> IO ()
+testBinding name = do
   host <- getHostName
 
-  if isJust . optName $ opts
-    then do
-      let volume = fromJust . optName $ opts
+  bracket (dbPath >>= connectSqlite3) disconnect $
+              \ conn -> do
+                 bindings <- quickQuery' conn ("SELECT * FROM bindings " ++
+                                               "WHERE volume = ? " ++
+                                               "AND host = ?")
+                             [toSql name, toSql host]
 
-      bracket (dbPath >>= connectSqlite3) disconnect $
-                  \ conn -> do
-                     bindings <- quickQuery' conn ("SELECT * FROM bindings " ++
-                                                   "WHERE volume = ? " ++
-                                                   "AND host = ?")
-                                 [toSql volume, toSql host]
-
-                     when (not (null bindings)) $
-                          error ("Binding for volume " ++ volume ++
-                                 " on host " ++ host ++ " already exists.")
-    else error "Options are missing."
-
-createBinding :: Options -> IO Binding
-createBinding opts = do
-  testBinding opts
-
-  host <- getHostName
-
-  if (isJust . optName $ opts) &&
-     (isJust . optVPoint $ opts) &&
-     (isJust . optBPoint $ opts)
-    then return $ Binding (fromJust . optName $ opts) host
-             (fromJust . optVPoint $ opts) (fromJust . optBPoint $ opts)
-    else error "Options are missing."
+                 when (not (null bindings)) $
+                      error ("Binding for volume " ++ name ++
+                             " on host " ++ host ++ " already exists.")
 
 addBinding :: Binding -> IO ()
 addBinding (Binding volume host vpoint bpoint) =
@@ -115,32 +97,16 @@ getBinding volume host = do
 
   return $ find (\ (Binding name _ _ _) -> volume == name) bindings
 
-testVolume :: Options -> IO ()
-testVolume opts =
-    if isJust . optName $ opts
-      then do
-        let volume = fromJust . optName $ opts
+testVolume :: VolumeName -> IO ()
+testVolume name = do
+  bracket (dbPath >>= connectSqlite3) disconnect $
+              \ conn -> do
+                volumes <- quickQuery' conn
+                           "SELECT * FROM volumes WHERE volume = ?"
+                           [toSql name]
 
-        bracket (dbPath >>= connectSqlite3) disconnect $
-                    \ conn -> do
-                      volumes <- quickQuery' conn
-                                 "SELECT * FROM volumes WHERE volume = ?"
-                                 [toSql volume]
-
-                      when (not (null volumes)) $
-                           error ("Volume " ++ volume ++ " already exists.")
-      else error "Options are missing."
-
-createVolume :: Options -> IO Volume
-createVolume opts = do
-  testVolume opts
-
-  if (isJust . optName $ opts) &&
-     (isJust . optVPoint $ opts)
-    then do
-      forest <- createFileForest $ fromJust . optVPoint $ opts
-      return $ Volume (fromJust . optName $ opts) forest
-    else error "Options are missing."
+                when (not (null volumes)) $
+                     error ("Volume " ++ name ++ " already exists.")
 
 addVolume :: Volume -> IO ()
 addVolume (Volume volume forest) =
@@ -170,8 +136,8 @@ getVolume volume =
                                sort . map (fromSql :: SqlValue -> String) $
                                concat paths
 
-getVolumes :: HostName -> IO [VolumeName]
-getVolumes host = do
+getVolumeNames :: HostName -> IO [VolumeName]
+getVolumeNames host = do
   bindings <- getBindings host
 
   return . map (\ (Binding name _ _ _) -> name) $ bindings
@@ -193,15 +159,12 @@ withVolumes operation host volumes = do
                                " not bound on host " ++ host ++ ".")
                     Just binding -> operation volume binding
 
-onHost :: Options -> (HostName -> [VolumeName] -> IO ()) -> IO ()
-onHost opts operation = do
+onHost :: Bool -> [VolumeName] -> (HostName -> [VolumeName] -> IO ()) -> IO ()
+onHost all names operation = do
   host <- getHostName
 
-  if optAll opts
-    then do
-      names <- getVolumes host
-      operation host names
-    else if not (null . optNames $ opts)
-           then operation host (optNames opts)
-           else error "Options are missing."
-
+  if all
+    then operation host =<< getVolumeNames host
+    else if not (null names)
+           then operation host names
+           else error "Volume names are missing."
